@@ -85,52 +85,35 @@ export default function Home() {
 
   return (
     <div className="shell">
-      <header className="topbar">
-        <button className="brand" onClick={() => choose(null)} aria-label="팀 목록으로 돌아가기"><span className="brand-mark">S</span> 성창재 네트워킹</button>
-        <span className="top-note">TEAM FEEDBACK · 2026</span>
-      </header>
       <main className="content">
-        <p className="eyebrow">— &nbsp; 네트워킹 피드백</p>
+        <h1 className="site-title">성창재 네트워킹 피드백</h1>
         {team ? (
           <>
-            <button className="back" onClick={() => choose(null)}>← 모든 팀 보기</button>
-            <section className="team-heading">
-              <div><p className="label">PRESENTING TEAM</p><h1>{team.name}</h1><p className="intro">발표를 듣고 떠오른 생각을 자유롭게 남겨주세요.</p></div>
-              <span className="team-number">{String(teams.indexOf(team) + 1).padStart(2, "0")}</span>
-            </section>
-            <div className="detail-grid">
-              <section className="form-area" aria-labelledby="write-title">
-                <p className="label">WRITE A NOTE</p><h2 id="write-title">익명 피드백 남기기</h2>
-                <p className="muted">좋았던 점, 궁금한 점, 제안하고 싶은 내용을 편하게 적어주세요.</p>
+            <button className="back" onClick={() => choose(null)}>← 발표팀 목록</button>
+            <h2 className="team-title">{team.name}</h2>
+            <section aria-label="익명 피드백">
                 <form onSubmit={submit}>
                   <label className="sr-only" htmlFor="feedback-body">피드백 내용</label>
-                  <textarea id="feedback-body" placeholder="이 팀의 발표에 대한 생각을 남겨주세요..." value={body} onChange={(event) => setBody(event.target.value)} minLength={2} maxLength={1000} required />
+                  <textarea id="feedback-body" placeholder="익명으로 피드백을 남겨주세요" value={body} onChange={(event) => setBody(event.target.value)} minLength={2} maxLength={1000} required />
                   <input className="trap" aria-hidden="true" tabIndex={-1} autoComplete="off" name="website" value={website} onChange={(event) => setWebsite(event.target.value)} />
-                  <div className="form-bottom"><span>{body.length} / 1,000</span><button className="submit" type="submit" disabled={submitting || body.trim().length < 2}>{submitting ? "등록 중..." : "의견 등록 ↗"}</button></div>
+                  <div className="form-bottom"><span>{body.length} / 1,000</span><button className="submit" type="submit" disabled={submitting || body.trim().length < 2}>{submitting ? "등록 중..." : "등록"}</button></div>
                 </form>
-                <p className="privacy">이름을 받지 않습니다. 등록한 의견은 이 페이지를 방문한 모두에게 공개됩니다.</p>
                 {success && <p className="status success" role="status">{success}</p>}
                 {error && <p className="status error" role="alert">{error}</p>}
-              </section>
-              <section className="feedback-area" aria-labelledby="feedback-title">
-                <div className="list-heading"><div><p className="label">COMMUNITY NOTES</p><h2 id="feedback-title">모두의 의견</h2></div><span className="count">{feedback.length}</span></div>
-                {loading ? <p className="empty">의견을 불러오는 중입니다...</p> : feedback.length === 0 ? <p className="empty">아직 등록된 의견이 없습니다.<br />첫 번째 피드백을 남겨주세요.</p> : (
-                  <div>{feedback.map((item) => <article className="feedback-item" key={item.id}><p>{item.body}</p><time dateTime={item.createdAt}>{new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(item.createdAt))}</time></article>)}</div>
-                )}
-              </section>
-            </div>
-          </>
-        ) : (
-          <>
-            <section className="hero"><p className="label">SEONGCHANGJAE NETWORKING 2026</p><h1>서로의 아이디어에<br /><em>한마디를 더해주세요.</em></h1><p className="intro">팀을 선택하고 발표에 대한 의견을 익명으로 남겨주세요.<br className="desktop-break" /> 작은 한마디가 다음 아이디어를 만듭니다.</p></section>
-            <section aria-labelledby="teams-title"><div className="list-heading"><div><p className="label">PRESENTING TEAMS</p><h2 id="teams-title">발표 팀</h2></div><span className="team-total">현재 {teams.length}팀</span></div>
-              <div className="team-grid">{teams.map((item, index) => <button className="team-card" key={item.slug} onClick={() => choose(item.slug)}><span className="card-number">{String(index + 1).padStart(2, "0")}</span><span className="card-name">{item.name}</span><span className="card-arrow" aria-hidden="true">↗</span></button>)}</div>
-              <p className="footnote">발표 팀은 추가될 예정입니다.</p>
+            </section>
+            <section className="feedback-area" aria-labelledby="feedback-title">
+              <h3 id="feedback-title">피드백 {feedback.length}</h3>
+              {loading ? <p className="empty">불러오는 중...</p> : feedback.length === 0 ? <p className="empty">아직 피드백이 없습니다.</p> : (
+                <div>{feedback.map((item) => <article className="feedback-item" key={item.id}><p>{item.body}</p></article>)}</div>
+              )}
             </section>
           </>
+        ) : (
+          <section aria-label="발표팀" className="team-list">
+            {teams.map((item) => <button className="team-row" key={item.slug} onClick={() => choose(item.slug)}>{item.name}<span aria-hidden="true">→</span></button>)}
+          </section>
         )}
       </main>
-      <footer className="footer"><span>성창재 네트워킹</span><span>함께 나누는 생각, 함께 자라는 아이디어.</span></footer>
     </div>
   );
 }

@@ -86,7 +86,7 @@ export default function Home() {
   return (
     <div className="shell">
       <main className="content">
-        <h1 className="site-title">성창재 네트워킹 피드백</h1>
+        <h1 className="site-title">팀에게 하고싶은 한 마디</h1>
         {team ? (
           <>
             <button className="back" onClick={() => choose(null)}>← 발표팀 목록</button>

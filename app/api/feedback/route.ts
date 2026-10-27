@@ -1,39 +1,43 @@
-import { desc, eq } from "drizzle-orm";
-import { getDb } from "../../../db";
-import { feedback } from "../../../db/schema";
-import { teams } from "../../../lib/teams";
+const feedbackServiceOrigin =
+  process.env.FEEDBACK_API_ORIGIN ??
+  "https://seongchangjae-feedback-2026.u-ncovering2026.chatgpt.site";
 
-export const dynamic = "force-dynamic";
+function feedbackUrl(request: Request) {
+  const incoming = new URL(request.url);
+  return new URL(`/api/feedback${incoming.search}`, feedbackServiceOrigin);
+}
 
-const validTeams = new Set(teams.map((team) => team.slug));
+function proxyResponse(response: Response) {
+  const headers = new Headers();
+  const contentType = response.headers.get("content-type");
+  if (contentType) headers.set("content-type", contentType);
+  headers.set("cache-control", "no-store");
+  return new Response(response.body, { status: response.status, headers });
+}
 
 export async function GET(request: Request) {
-  const team = new URL(request.url).searchParams.get("team");
-  if (!team || !validTeams.has(team)) return Response.json({ error: "팀을 찾을 수 없습니다." }, { status: 400 });
   try {
-    const rows = await getDb().select().from(feedback).where(eq(feedback.team, team)).orderBy(desc(feedback.createdAt));
-    return Response.json({ feedback: rows }, { headers: { "Cache-Control": "no-store" } });
+    return proxyResponse(await fetch(feedbackUrl(request), { cache: "no-store" }));
   } catch {
-    return Response.json({ error: "의견을 불러오지 못했습니다." }, { status: 500 });
+    return Response.json({ error: "의견을 불러오지 못했습니다." }, { status: 502 });
   }
 }
 
 export async function POST(request: Request) {
-  if (!request.headers.get("content-type")?.includes("application/json")) return Response.json({ error: "잘못된 요청입니다." }, { status: 415 });
-  if (Number(request.headers.get("content-length") || 0) > 5000) return Response.json({ error: "의견이 너무 깁니다." }, { status: 413 });
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return Response.json({ error: "잘못된 요청입니다." }, { status: 403 });
-  let payload: unknown;
-  try { payload = await request.json(); } catch { return Response.json({ error: "잘못된 요청입니다." }, { status: 400 }); }
-  if (!payload || typeof payload !== "object") return Response.json({ error: "잘못된 요청입니다." }, { status: 400 });
-  const input = payload as { team?: unknown; body?: unknown; website?: unknown };
-  if (input.website) return Response.json({ ok: true });
-  if (typeof input.team !== "string" || !validTeams.has(input.team)) return Response.json({ error: "팀을 찾을 수 없습니다." }, { status: 400 });
-  if (typeof input.body !== "string" || input.body.trim().length < 2 || input.body.trim().length > 1000) return Response.json({ error: "의견은 2~1,000자로 입력해 주세요." }, { status: 400 });
+  const contentType = request.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    return Response.json({ error: "잘못된 요청입니다." }, { status: 415 });
+  }
+
   try {
-    await getDb().insert(feedback).values({ id: crypto.randomUUID(), team: input.team, body: input.body.trim() });
-    return Response.json({ ok: true }, { status: 201 });
+    const response = await fetch(feedbackUrl(request), {
+      method: "POST",
+      headers: { "content-type": contentType },
+      body: await request.text(),
+      cache: "no-store",
+    });
+    return proxyResponse(response);
   } catch {
-    return Response.json({ error: "의견을 등록하지 못했습니다." }, { status: 500 });
+    return Response.json({ error: "의견을 등록하지 못했습니다." }, { status: 502 });
   }
 }
